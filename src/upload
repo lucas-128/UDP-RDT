@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+import socket
+import client
+import my_parser
+import sigint_handler
+import logger
+import os
+import netifaces as ni
+from datetime import datetime
+
+
+
+#IP para bindear socket cliente
+interfaces = ni.interfaces()
+i = [interface for interface in interfaces if 'eth0' in interface]
+if len(i)>0:
+    ip = ni.ifaddresses(i[0])[ni.AF_INET][0]['addr']
+else:
+    ip = "127.0.0.1"
+LOCALHOST = ip
+
+
+arguments = my_parser.Arguments('upload')
+map = vars(arguments.get_args())
+action = "upload"
+action_mode = "2" #   1 == Selective Repeat, 2 == Stop & Wait
+server_ip_addr = arguments.get_arg('host')
+server_port = arguments.get_arg('port')
+path = arguments.get_arg('src')
+if arguments.get_arg('src')==".":
+    path = os.getcwd()
+filename = arguments.get_arg('name')
+file_name_complet = path+'/'+filename
+protocol = arguments.get_arg('protocol')
+verbose = arguments.get_arg('verbose')
+quiet = arguments.get_arg('quiet')
+
+#default verbosity=quiet
+if not verbose and not quiet:
+    verbose = False
+# Catch SIGINT
+sigint_handler.activate()
+# Init Logger
+now = datetime.now() # current date and time
+date_time = now.strftime("%m-%d-%Y_%H:%M:%S")
+logger = logger.Logger(verbose,"client-"+date_time)
+#init client
+client = client.Client(LOCALHOST, 0,logger) # Port 0 to bind to a random available port
+if protocol=="sw":
+    client.stop_and_wait_upload(file_name_complet,filename,server_ip_addr, server_port)
+elif protocol=="sr":
+    client.selective_repeat_upload(file_name_complet,filename,server_ip_addr, server_port)

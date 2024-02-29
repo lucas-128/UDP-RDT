@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+import server
+import logger
+import sigint_handler
+import my_parser
+import netifaces as ni
+from datetime import datetime
+arguments = my_parser.Arguments('start-server')
+
+ip_addr = arguments.get_arg('host')
+port = arguments.get_arg('port')
+storage_dir_path = arguments.get_arg('storage')
+verbose = arguments.get_arg('verbose')
+quiet = arguments.get_arg('quiet')
+
+#default verbosity=quiet
+if not verbose and not quiet:
+    verbose = False
+
+# Catch SIGINT
+sigint_handler.activate()
+#init server
+now = datetime.now() # current date and time
+date_time = now.strftime("%m-%d-%Y_%H:%M:%S")
+logger = logger.Logger(verbose,"server-"+date_time)
+server = server.Server(ip_addr, port,logger)
+server.init_storage_path(storage_dir_path)
+server.run()
